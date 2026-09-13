@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>دفتر الفواتير — Invoice Ledger</title>
+<meta name="theme-color" content="#16332b">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="دفتر">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&family=Spectral:ital,wght@0,500;0,700;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="topbar">
+    <div class="brand">دفتر<small>Invoice Ledger</small></div>
+    <div class="net-state" id="netState">غير متصل</div>
+  </div>
+
+  <!-- ================= HOME / INVOICE LIST ================= -->
+  <section class="view" id="view-home">
+    <div class="section-title">فواتيري</div>
+    <div id="invoiceList"></div>
+    <div class="empty-state" id="homeEmpty" hidden>
+      <div class="glyph">🧾</div>
+      <p>لا توجد فواتير محفوظة بعد</p>
+      <p>اضغط على "إضافة" لبدء المسح</p>
+    </div>
+  </section>
+
+  <!-- ================= ADD / CAPTURE ================= -->
+  <section class="view" id="view-add" hidden>
+    <div class="section-title">إضافة فاتورة</div>
+    <div class="fab-row">
+      <div class="fab" id="btnScanCamera">
+        <div class="fab-icon">📷</div>
+        <div class="fab-label">مسح إيصال</div>
+        <div class="fab-sub">بالكاميرا</div>
+      </div>
+      <div class="fab" id="btnImportImage">
+        <div class="fab-icon">🖼️</div>
+        <div class="fab-label">استيراد صورة</div>
+        <div class="fab-sub">فاتورة</div>
+      </div>
+      <div class="fab" id="btnImportPdf">
+        <div class="fab-icon">📄</div>
+        <div class="fab-label">استيراد PDF</div>
+        <div class="fab-sub">من واتساب مثلاً</div>
+      </div>
+      <div class="fab" id="btnScanBarcode">
+        <div class="fab-icon">▦</div>
+        <div class="fab-label">مسح باركود</div>
+        <div class="fab-sub">منتج مفرد</div>
+      </div>
+    </div>
+    <input type="file" id="fileCamera" accept="image/*" capture="environment" hidden>
+    <input type="file" id="fileImage" accept="image/*" hidden>
+    <input type="file" id="filePdf" accept="application/pdf" hidden>
+    <div id="processingStatus"></div>
+  </section>
+
+  <!-- ================= BARCODE SCANNER ================= -->
+  <section class="view" id="view-barcode" hidden>
+    <div class="section-title">مسح الباركود</div>
+    <div class="scan-surface">
+      <video id="barcodeVideo" autoplay muted playsinline></video>
+      <div class="scan-frame"></div>
+      <div class="scan-hint">وجّه الكاميرا نحو الباركود</div>
+    </div>
+    <div class="field" style="margin-top:14px;">
+      <label>أو أدخل الباركود يدويًا</label>
+      <input type="text" id="manualBarcodeInput" inputmode="numeric" placeholder="مثال: 6281007338618">
+    </div>
+    <button class="btn full" id="btnManualBarcodeSubmit">إدخال يدوي</button>
+    <button class="btn secondary full" id="btnCancelBarcode" style="margin-top:8px;">إلغاء</button>
+    <div id="barcodeResult"></div>
+  </section>
+
+  <!-- ================= REVIEW / EDIT INVOICE ================= -->
+  <section class="view" id="view-review" hidden>
+    <div class="section-title">مراجعة الفاتورة</div>
+    <div id="reviewBanner"></div>
+    <div id="reviewMeta"></div>
+    <div class="section-title" style="margin-top:18px;">المنتجات</div>
+    <div id="reviewItems"></div>
+    <button class="btn secondary full" id="btnAddItemManually">+ إضافة منتج يدويًا</button>
+    <div id="reviewTotals"></div>
+    <div class="fab-row" style="grid-template-columns:1fr 1fr;">
+      <button class="btn secondary full" id="btnDiscardInvoice">تجاهل</button>
+      <button class="btn full" id="btnSaveInvoice">حفظ الفاتورة</button>
+    </div>
+  </section>
+
+  <!-- ================= INVOICE DETAIL (saved) ================= -->
+  <section class="view" id="view-detail" hidden>
+    <div class="section-title">تفاصيل الفاتورة</div>
+    <div id="detailContent"></div>
+    <div class="fab-row" style="grid-template-columns:1fr 1fr;">
+      <button class="btn secondary full" id="btnBackFromDetail">رجوع</button>
+      <button class="btn danger full" id="btnDeleteInvoice">حذف الفاتورة</button>
+    </div>
+  </section>
+
+  <!-- ================= REPORTS ================= -->
+  <section class="view" id="view-reports" hidden>
+    <div class="section-title">التقارير</div>
+    <div id="reportsContent"></div>
+  </section>
+
+  <!-- ================= SETTINGS ================= -->
+  <section class="view" id="view-settings" hidden>
+    <div class="section-title">الحساب</div>
+    <div id="authArea"></div>
+
+    <div class="section-title" style="margin-top:20px;">المزامنة</div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">مزامنة البيانات الآن</div>
+        <div class="setting-sub" id="syncStatusSub">—</div>
+      </div>
+      <button class="btn small" id="btnSyncNow">مزامنة</button>
+    </div>
+
+    <div class="section-title" style="margin-top:20px;">الذكاء الاصطناعي</div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">السماح برفع الفاتورة للذكاء الاصطناعي عند الحاجة</div>
+        <div class="setting-sub">يُستخدم فقط بعد فشل القراءة الآلية، وبموافقتك الصريحة كل مرة</div>
+      </div>
+      <input type="checkbox" id="aiConsentToggle">
+    </div>
+
+    <div class="section-title" style="margin-top:20px;">التعلّم من تصحيحاتك</div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">تحسين تلقائي لكل تاجر بناءً على تصحيحاتك</div>
+        <div class="setting-sub">يبقى على جهازك فقط — لا يُرسل لأي خادم إلا إذا فعّلت المزامنة</div>
+      </div>
+      <input type="checkbox" id="learningToggle">
+    </div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">عدد التجار الذين تعلّم منهم التطبيق</div>
+        <div class="setting-sub" id="learnedMerchantsSub">—</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:20px;">إدارة البيانات</div>
+    <div class="setting-row">
+      <div>
+        <div class="setting-label">إعادة تعيين بيانات التطبيق</div>
+        <div class="setting-sub">حذف جميع الفواتير والمنتجات محليًا</div>
+      </div>
+      <button class="btn danger small" id="btnResetApp">إعادة تعيين</button>
+    </div>
+  </section>
+
+  <!-- ================= TAB BAR ================= -->
+  <nav class="tabbar">
+    <button class="tab-btn active" data-view="home"><span class="tab-icon">🧾</span>الفواتير</button>
+    <button class="tab-btn" data-view="add"><span class="tab-icon">➕</span>إضافة</button>
+    <button class="tab-btn" data-view="reports"><span class="tab-icon">📊</span>التقارير</button>
+    <button class="tab-btn" data-view="settings"><span class="tab-icon">⚙️</span>الإعدادات</button>
+  </nav>
+
+  <!-- ================= MODALS ================= -->
+  <div class="modal-backdrop" id="confirmModal" hidden>
+    <div class="modal-card">
+      <h3 id="confirmTitle"></h3>
+      <p id="confirmBody"></p>
+      <div class="modal-actions">
+        <button class="btn secondary full" id="confirmCancel">إلغاء</button>
+        <button class="btn danger full" id="confirmOk">تأكيد</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="aiConsentModal" hidden>
+    <div class="modal-card">
+      <h3>رفع الفاتورة إلى الذكاء الاصطناعي؟</h3>
+      <p>تعذّرت القراءة الآلية لهذه الفاتورة. هل توافق على رفع نص وصورة الفاتورة إلى خدمة ذكاء اصطناعي لاستخراج المنتجات؟ سيتم استخدام هذا فقط لهذه الفاتورة.</p>
+      <div class="modal-actions">
+        <button class="btn secondary full" id="aiConsentDecline">رفض</button>
+        <button class="btn full" id="aiConsentAccept">موافق</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+</div>
+
+<script src="vendor/pdf.min.js"></script>
+<script src="vendor/zxing.min.js"></script>
+<script src="js/arabicUtils.js"></script>
+<script src="js/db.js"></script>
+<script src="js/validation.js"></script>
+<script src="js/parsers/common.js"></script>
+<script src="js/columnParser.js"></script>
+<script src="js/learning.js"></script>
+<script src="js/parsers/smartShopper.js"></script>
+<script src="js/parsers/alHatab.js"></script>
+<script src="js/parsers/generic.js"></script>
+<script src="js/pdfExtract.js"></script>
+<script src="js/ocr.js"></script>
+<script src="js/aiFallback.js"></script>
+<script src="js/pipeline.js"></script>
+<script src="js/barcode.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>

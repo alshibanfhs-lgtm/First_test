@@ -1,0 +1,394 @@
+/*
+  Design concept: "دفتر" (ledger/notebook)
+  This is a receipts app for a Saudi audience — the visual language borrows from
+  thermal-paper till receipts and ledger books, not generic SaaS cards.
+  - Palette: deep ink green (trust, money, official) + warm paper cream + a single
+    stamped-red accent reserved for "needs review / rejected" states only.
+  - Type: a slab/serif for numbers and totals (ledger authority), a clean humanist
+    sans for Arabic + UI (Tajawal), tabular numerals throughout so columns align.
+  - Layout: everything is a torn receipt strip — dashed perforation edges, a serrated
+    bottom edge on cards, monospaced amount columns.
+*/
+
+:root{
+  --ink: #16332b;
+  --ink-soft: #2d4a40;
+  --paper: #f6f1e4;
+  --paper-raised: #fffdf7;
+  --paper-line: #e3d9bf;
+  --brass: #b08d3e;
+  --brass-soft: #ddc98a;
+  --stamp-red: #a83232;
+  --stamp-red-soft: #f3dede;
+  --ok-green: #2f6f4f;
+  --ok-green-soft: #dfeee3;
+  --amber: #a2701c;
+  --amber-soft: #f4e6c8;
+  --shadow: 0 2px 0 rgba(22,51,43,0.08);
+  --radius: 2px;
+  --font-ui: "Tajawal", "Segoe UI", system-ui, sans-serif;
+  --font-num: "Spectral", "Georgia", serif;
+}
+
+*{ box-sizing: border-box; }
+html,body{ margin:0; padding:0; }
+
+body{
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  direction: rtl;
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+body.lang-en{ direction: ltr; }
+
+/* faint paper fiber texture */
+body{
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(176,141,62,0.05), transparent 40%),
+    radial-gradient(circle at 80% 90%, rgba(22,51,43,0.04), transparent 45%);
+}
+
+.app-shell{
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ---------- Top bar ---------- */
+.topbar{
+  background: var(--ink);
+  color: var(--paper-raised);
+  padding: 14px 18px 12px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 3px double var(--brass-soft);
+}
+.topbar .brand{
+  font-family: var(--font-num);
+  font-size: 20px;
+  letter-spacing: 0.02em;
+}
+.topbar .brand small{
+  display:block;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--brass-soft);
+  margin-top: 2px;
+  font-weight: 400;
+}
+.topbar .net-state{
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--brass-soft);
+  color: var(--brass-soft);
+}
+.topbar .net-state.online{ color: var(--ok-green-soft); border-color: var(--ok-green-soft); }
+
+/* ---------- Main scroll area ---------- */
+.view{
+  flex: 1;
+  padding: 16px 16px 90px;
+  overflow-y: auto;
+}
+.view[hidden]{ display:none; }
+
+/* ---------- Bottom tab bar ---------- */
+.tabbar{
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  background: var(--paper-raised);
+  border-top: 1px dashed var(--paper-line);
+  box-shadow: 0 -2px 8px rgba(22,51,43,0.06);
+}
+.tabbar button{
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 10px 4px 12px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--ink-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+}
+.tabbar button .tab-icon{ font-size: 19px; }
+.tabbar button.active{ color: var(--ink); font-weight: 700; }
+.tabbar button.active .tab-icon{ transform: translateY(-1px); }
+
+/* ---------- Receipt card ---------- */
+.receipt-card{
+  background: var(--paper-raised);
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+  position: relative;
+  box-shadow: var(--shadow);
+}
+.receipt-card::after{
+  /* serrated bottom edge */
+  content:"";
+  display:block;
+  height:8px;
+  background-image: linear-gradient(135deg, var(--paper) 50%, transparent 50%),
+                     linear-gradient(-135deg, var(--paper) 50%, transparent 50%);
+  background-size: 12px 12px;
+  background-position: bottom;
+  background-repeat: repeat-x;
+}
+.receipt-card .card-body{ padding: 14px 16px; }
+
+.receipt-card.status-valid{ border-inline-start: 4px solid var(--ok-green); }
+.receipt-card.status-review{ border-inline-start: 4px solid var(--amber); }
+.receipt-card.status-rejected{ border-inline-start: 4px solid var(--stamp-red); }
+
+.receipt-head{
+  display:flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+}
+.receipt-merchant{ font-weight: 700; font-size: 16px; }
+.receipt-date{ font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+.receipt-total{
+  font-family: var(--font-num);
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.status-pill{
+  display:inline-flex; align-items:center; gap:5px;
+  font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-top: 6px;
+}
+.status-pill.valid{ background: var(--ok-green-soft); color: var(--ok-green); }
+.status-pill.review{ background: var(--amber-soft); color: var(--amber); }
+.status-pill.rejected{ background: var(--stamp-red-soft); color: var(--stamp-red); }
+.status-pill .dot{ width:6px; height:6px; border-radius:50%; background: currentColor; }
+
+.receipt-meta-row{
+  display:flex; justify-content: space-between; font-size: 12px; color: var(--ink-soft);
+  margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--paper-line);
+}
+
+.card-actions{
+  display:flex; gap: 8px; margin-top: 10px;
+}
+
+/* ---------- Buttons ---------- */
+button{ font-family: inherit; }
+.btn{
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper-raised);
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn:active{ transform: translateY(1px); }
+.btn.secondary{ background: transparent; color: var(--ink); }
+.btn.ghost{ background: transparent; color: var(--ink-soft); border-color: var(--paper-line); }
+.btn.danger{ background: var(--stamp-red); border-color: var(--stamp-red); }
+.btn.small{ padding: 6px 10px; font-size: 12px; }
+.btn.full{ width: 100%; }
+.btn[disabled]{ opacity: 0.45; cursor: not-allowed; }
+
+.fab-row{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.fab{
+  background: var(--paper-raised);
+  border: 1px dashed var(--brass);
+  border-radius: var(--radius);
+  padding: 16px 10px;
+  text-align: center;
+  display:flex; flex-direction: column; align-items:center; gap:6px;
+  cursor:pointer;
+}
+.fab .fab-icon{ font-size: 26px; }
+.fab .fab-label{ font-size: 13px; font-weight: 700; }
+.fab .fab-sub{ font-size: 11px; color: var(--ink-soft); }
+
+/* ---------- Section headers ---------- */
+.section-title{
+  font-family: var(--font-num);
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin: 4px 0 10px;
+  display:flex; align-items:center; gap:8px;
+}
+.section-title::after{ content:""; flex:1; border-top: 1px dashed var(--paper-line); }
+
+/* ---------- Empty state ---------- */
+.empty-state{
+  text-align:center; padding: 50px 20px; color: var(--ink-soft);
+}
+.empty-state .glyph{ font-size: 40px; margin-bottom: 10px; }
+.empty-state p{ margin: 4px 0; }
+
+/* ---------- Forms / review interface ---------- */
+.field{ margin-bottom: 12px; }
+.field label{ display:block; font-size: 12px; color: var(--ink-soft); margin-bottom: 4px; }
+.field input, .field select{
+  width: 100%;
+  padding: 10px 10px;
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-size: 15px;
+  font-family: inherit;
+}
+.field input[type="number"]{ font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.field input:focus, .field select:focus{ outline: 2px solid var(--brass); outline-offset: 1px; }
+
+.item-row{
+  background: var(--paper-raised);
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius);
+  padding: 10px;
+  margin-bottom: 8px;
+}
+.item-row-grid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.item-row-grid.compact{
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  align-items: end;
+}
+.item-row-grid.compact label{ font-size: 10px; }
+.item-row-top{ display:flex; justify-content: space-between; align-items:center; margin-bottom: 6px; }
+.item-index{ font-family: var(--font-num); font-size: 12px; color: var(--brass); }
+.confidence-badge{ font-size: 10px; padding: 1px 6px; border-radius: 999px; }
+.confidence-badge.high{ background: var(--ok-green-soft); color: var(--ok-green); }
+.confidence-badge.mid{ background: var(--amber-soft); color: var(--amber); }
+.confidence-badge.low{ background: var(--stamp-red-soft); color: var(--stamp-red); }
+
+.totals-strip{
+  background: var(--ink);
+  color: var(--paper-raised);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin: 14px 0;
+}
+.totals-strip .row{
+  display:flex; justify-content: space-between; font-size: 13px; padding: 3px 0;
+  font-family: var(--font-num); font-variant-numeric: tabular-nums;
+}
+.totals-strip .row.grand{ font-size: 17px; border-top: 1px dashed var(--brass-soft); margin-top: 6px; padding-top: 8px; font-weight: 700; }
+.totals-strip .row.diff{ color: var(--amber-soft); }
+.totals-strip .row.diff.zero{ color: var(--ok-green-soft); }
+
+.banner{
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  margin-bottom: 12px;
+  display:flex; gap:8px; align-items:flex-start;
+}
+.banner.valid{ background: var(--ok-green-soft); color: var(--ok-green); }
+.banner.review{ background: var(--amber-soft); color: var(--amber); }
+.banner.rejected{ background: var(--stamp-red-soft); color: var(--stamp-red); }
+
+/* ---------- Camera / scan ---------- */
+.scan-surface{
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 3/4;
+}
+.scan-surface video{ width:100%; height:100%; object-fit: cover; }
+.scan-frame{
+  position:absolute; inset: 12%;
+  border: 2px solid var(--brass-soft);
+  border-radius: 8px;
+  box-shadow: 0 0 0 2000px rgba(0,0,0,0.35);
+}
+.scan-hint{
+  position:absolute; bottom: 14px; inset-inline: 14px;
+  text-align:center; color:#fff; font-size: 13px;
+  background: rgba(0,0,0,0.45); padding: 8px; border-radius: var(--radius);
+}
+
+/* ---------- Modal / confirm dialogs ---------- */
+.modal-backdrop{
+  position: fixed; inset:0; background: rgba(22,51,43,0.45);
+  display:flex; align-items:center; justify-content:center; padding: 24px;
+  z-index: 50;
+}
+.modal-backdrop[hidden]{ display:none; }
+.modal-card{
+  background: var(--paper-raised);
+  border-radius: var(--radius);
+  padding: 18px;
+  max-width: 380px;
+  width: 100%;
+  border: 1px solid var(--paper-line);
+}
+.modal-card h3{ margin: 0 0 8px; font-family: var(--font-num); }
+.modal-card p{ font-size: 13px; color: var(--ink-soft); }
+.modal-actions{ display:flex; gap:8px; margin-top: 16px; }
+
+/* ---------- Toast ---------- */
+.toast{
+  position: fixed; bottom: 90px; inset-inline: 20px;
+  background: var(--ink); color: var(--paper-raised);
+  padding: 10px 14px; border-radius: var(--radius);
+  font-size: 13px; text-align: center; z-index: 60;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.toast[hidden]{ display:none; }
+
+/* ---------- Reports ---------- */
+.report-block{ margin-bottom: 20px; }
+.bar-row{ display:flex; align-items:center; gap:8px; margin-bottom: 6px; font-size: 12px; }
+.bar-row .label{ width: 90px; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bar-track{ flex:1; height: 10px; background: var(--paper-line); border-radius: 999px; overflow:hidden; }
+.bar-fill{ height:100%; background: var(--brass); }
+.bar-value{ width: 70px; text-align: end; font-family: var(--font-num); flex-shrink:0; }
+
+/* ---------- Settings ---------- */
+.setting-row{
+  display:flex; justify-content: space-between; align-items:center;
+  padding: 12px 0; border-bottom: 1px dashed var(--paper-line);
+}
+.setting-row .setting-label{ font-size: 14px; }
+.setting-row .setting-sub{ font-size: 11px; color: var(--ink-soft); }
+
+.chip{
+  display:inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px;
+  background: var(--paper-line); color: var(--ink-soft); margin-inline-end: 4px;
+}
+
+@media (max-width: 360px){
+  .item-row-grid.compact{ grid-template-columns: 1fr 1fr; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *{ transition: none !important; animation: none !important; }
+}
+
+/* Focus visibility */
+a:focus-visible, button:focus-visible, input:focus-visible{
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
